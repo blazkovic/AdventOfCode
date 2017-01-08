@@ -992,7 +992,7 @@ unsigned int findNumberOfNonBlockedIPs(const LimitVector & p_limitVector)
             l_currentValue = it.first;
         }
 
-        if(it.second > l_currentValue + 1)
+        if(it.second > l_currentValue)
         {
             l_currentValue = it.second;
         }
