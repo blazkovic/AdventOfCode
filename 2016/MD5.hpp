@@ -1,3 +1,12 @@
+/* Algorithm was created according to 
+ * 
+ * https://tools.ietf.org/html/rfc1321
+ *
+ * To do:
+ *  - Performance improvement 
+ *  - Refactor
+ */
+
 #pragma once
 
 #include <vector>
