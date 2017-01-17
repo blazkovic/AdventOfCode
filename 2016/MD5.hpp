@@ -1,10 +1,11 @@
-/* Algorithm was created according to 
- * 
+/* Algorithm was created according to
+ *
  * https://tools.ietf.org/html/rfc1321
  *
  * To do:
- *  - Performance improvement 
+ *  - Performance improvement
  *  - Refactor
+ *  - Handle message size overflow (mod 2^64)
  */
 
 #pragma once
@@ -22,7 +23,8 @@ public:
     MD5(const std::string & p_input)
         : m_input(p_input),
           m_sinVector(generateSinValues()),
-          m_32BitWordVector(generateVectorOf32BitWords())
+          m_32BitWordVector(generateVectorOf32BitWords()),
+          m_charLookupVector{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'}
     {}
 
     std::string getHash()
@@ -174,43 +176,69 @@ private:
         const auto l_paddingLimit = 448u;
         const auto l_desiredDataSize = 512u;
         const auto l_bitsetSize = p_bitsetVector[0].size();
-        p_bitsetVector.emplace_back(10000000);
+        p_bitsetVector.emplace_back(128); // 0x10000000
 
         while(((p_bitsetVector.size()*l_bitsetSize)%l_desiredDataSize) != l_paddingLimit)
         {
-            p_bitsetVector.emplace_back(00000000);
+            p_bitsetVector.emplace_back();
         }
     }
 
     std::string transformResult(uint32_t p_a, uint32_t p_b, uint32_t p_c, uint32_t p_d)
     {
-        const auto l_firstMask = 0xff00ff00;
-        const auto l_secondMask = 0x00ff00ff;
+        std::string l_result(32, '-');
 
-        p_a = ((rotateLeft(p_a, 24) & l_firstMask) | (rotateLeft(p_a, 8) & l_secondMask));
-        p_b = ((rotateLeft(p_b, 24) & l_firstMask) | (rotateLeft(p_b, 8) & l_secondMask));
-        p_c = ((rotateLeft(p_c, 24) & l_firstMask) | (rotateLeft(p_c, 8) & l_secondMask));
-        p_d = ((rotateLeft(p_d, 24) & l_firstMask) | (rotateLeft(p_d, 8) & l_secondMask));
+        l_result[0] = m_charLookupVector[((p_a >> 4)& 0x0000000f)];
+        l_result[1] = m_charLookupVector[(p_a & 0x0000000f)];
+        l_result[2] = m_charLookupVector[((p_a >> 12) & 0x0000000f)];
+        l_result[3] = m_charLookupVector[((p_a >> 8) & 0x0000000f)];
+        l_result[4] = m_charLookupVector[((p_a >> 20) & 0x0000000f)];
+        l_result[5] = m_charLookupVector[((p_a >> 16) & 0x0000000f)];
+        l_result[6] = m_charLookupVector[((p_a >> 28) & 0x0000000f)];
+        l_result[7] = m_charLookupVector[((p_a >> 24) & 0x0000000f)];
+        l_result[8]  = m_charLookupVector[((p_b >> 4)& 0x0000000f)];
+        l_result[9]  = m_charLookupVector[(p_b & 0x0000000f)];
+        l_result[10] = m_charLookupVector[((p_b >> 12) & 0x0000000f)];
+        l_result[11] = m_charLookupVector[((p_b >> 8) & 0x0000000f)];
+        l_result[12] = m_charLookupVector[((p_b >> 20) & 0x0000000f)];
+        l_result[13] = m_charLookupVector[((p_b >> 16) & 0x0000000f)];
+        l_result[14] = m_charLookupVector[((p_b >> 28) & 0x0000000f)];
+        l_result[15] = m_charLookupVector[((p_b >> 24) & 0x0000000f)];
+        l_result[16] = m_charLookupVector[((p_c >> 4)& 0x0000000f)];
+        l_result[17] = m_charLookupVector[(p_c & 0x0000000f)];
+        l_result[18] = m_charLookupVector[((p_c >> 12) & 0x0000000f)];
+        l_result[19] = m_charLookupVector[((p_c >> 8) & 0x0000000f)];
+        l_result[20] = m_charLookupVector[((p_c >> 20) & 0x0000000f)];
+        l_result[21] = m_charLookupVector[((p_c >> 16) & 0x0000000f)];
+        l_result[22] = m_charLookupVector[((p_c >> 28) & 0x0000000f)];
+        l_result[23] = m_charLookupVector[((p_c >> 24) & 0x0000000f)];
+        l_result[24] = m_charLookupVector[((p_d >> 4)& 0x0000000f)];
+        l_result[25] = m_charLookupVector[(p_d & 0x0000000f)];
+        l_result[26] = m_charLookupVector[((p_d >> 12) & 0x0000000f)];
+        l_result[27] = m_charLookupVector[((p_d >> 8) & 0x0000000f)];
+        l_result[28] = m_charLookupVector[((p_d >> 20) & 0x0000000f)];
+        l_result[29] = m_charLookupVector[((p_d >> 16) & 0x0000000f)];
+        l_result[30] = m_charLookupVector[((p_d >> 28) & 0x0000000f)];
+        l_result[31] = m_charLookupVector[((p_d >> 24) & 0x0000000f)];
 
-        std::string result;
-        std::stringstream ss;
-        ss << std::setw(8) << std::setfill('0') << std::hex << p_a;
-        ss << std::setw(8) << std::setfill('0') << std::hex << p_b;
-        ss << std::setw(8) << std::setfill('0') << std::hex << p_c;
-        ss << std::setw(8) << std::setfill('0') << std::hex << p_d;
-        result += ss.str();
-        return result;
+        return l_result;
     }
 
     std::vector<uint32_t> generateSinValues()
     {
-        std::vector<uint32_t> l_output;
-        const auto l_power = std::pow(2, 32);
-        for (auto i = 0u; i < 64; i++)
-        {
-            l_output.emplace_back(std::floor(l_power * std::abs(std::sin(i + 1))));
-        }
-        return l_output;
+        // precalculated according to formula:
+        // std::floor(std::pow(2, 32) * std::abs(std::sin(i + 1)); where i = 0-63 with step 1
+        return {3614090360,   3905402710, 606105819,  3250441966, 4118548399, 1200080426,
+                2821735955,   4249261313, 1770035416, 2336552879, 4294925233, 2304563134,
+                1804603682,   4254626195, 2792965006, 1236535329, 4129170786, 3225465664,
+                643717713,    3921069994, 3593408605, 38016083,   3634488961, 3889429448,
+                568446438,    3275163606, 4107603335, 1163531501, 2850285829, 4243563512,
+                1735328473,   2368359562, 4294588738, 2272392833, 1839030562, 4259657740,
+                2763975236,   1272893353, 4139469664, 3200236656, 681279174,  3936430074,
+                3572445317,   76029189,   3654602809, 3873151461, 530742520,  3299628645,
+                4096336452,   1126891415, 2878612391, 4237533241, 1700485571, 2399980690,
+                4293915773,   2240044497, 1873313359, 4264355552, 2734768916, 1309151649,
+                4149444226,   3174756917, 718787259,  3951481745};
     }
 
     std::vector<uint32_t> generateVectorOf32BitWords()
@@ -269,4 +297,5 @@ private:
     const std::string m_input;
     const std::vector<uint32_t> m_sinVector;
     const std::vector<uint32_t> m_32BitWordVector;
+    const std::vector<char> m_charLookupVector;
 };
