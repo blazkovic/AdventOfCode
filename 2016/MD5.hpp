@@ -20,22 +20,21 @@
 class MD5
 {
 public:
-    MD5(const std::string & p_input)
-        : m_input(p_input),
-          m_sinVector(generateSinValues()),
-          m_32BitWordVector(generateVectorOf32BitWords()),
-          m_charLookupVector{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'}
+    MD5() :
+        m_sinVector(generateSinValues()),
+        m_charLookupVector{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'}
     {}
 
-    std::string getHash()
+    std::string getHash(const std::string & p_string) const
     {
-        return createMD5Sum();
+        const auto l_vector = generateVectorOf32BitWords(p_string);
+        return createMD5Sum(l_vector);
     }
 
 private:
     using BitsetVector = std::vector<std::bitset<8>>;
 
-    std::string createMD5Sum()
+    std::string createMD5Sum(const std::vector<std::uint32_t> & p_vector) const
     {
         const auto l_xTableSize = 16;
         std::vector<uint32_t> l_xTable;
@@ -45,11 +44,11 @@ private:
         uint32_t C_WORD = 0x98badcfe;
         uint32_t D_WORD = 0x10325476;
 
-        for (auto i = 0u; i < m_32BitWordVector.size() / 16; i++)
+        for (auto i = 0u; i < p_vector.size() / 16; i++)
         {
             for (auto j = 0u; j < l_xTableSize; j++)
             {
-                l_xTable.emplace_back(m_32BitWordVector[i*16 + j]);
+                l_xTable.emplace_back(p_vector[i*16 + j]);
             }
 
             const uint32_t l_aa = A_WORD;
@@ -150,7 +149,7 @@ private:
         return transformResult(A_WORD, B_WORD, C_WORD, D_WORD);
     }
 
-    BitsetVector stringToBinaryWithPadding(const std::string & p_input)
+    BitsetVector stringToBinaryWithPadding(const std::string & p_input) const
     {
         const auto l_inputSize = p_input.size();
         BitsetVector l_bitsetVector;
@@ -162,7 +161,7 @@ private:
         return l_bitsetVector;
     }
 
-    void appendMessageLength(BitsetVector & p_bitsetVector, int p_initialMessageLength)
+    void appendMessageLength(BitsetVector & p_bitsetVector, int p_initialMessageLength) const
     {
         const uint64_t l_initialMsgSizeInBits = p_initialMessageLength*8;
         for (auto i = 0u; i < 8; i++)
@@ -171,7 +170,7 @@ private:
         }
     }
 
-    void addPadding(BitsetVector & p_bitsetVector)
+    void addPadding(BitsetVector & p_bitsetVector) const
     {
         const auto l_paddingLimit = 448u;
         const auto l_desiredDataSize = 512u;
@@ -184,7 +183,7 @@ private:
         }
     }
 
-    std::string transformResult(uint32_t p_a, uint32_t p_b, uint32_t p_c, uint32_t p_d)
+    std::string transformResult(uint32_t p_a, uint32_t p_b, uint32_t p_c, uint32_t p_d) const
     {
         std::string l_result(32, '-');
 
@@ -224,7 +223,7 @@ private:
         return l_result;
     }
 
-    std::vector<uint32_t> generateSinValues()
+    std::vector<uint32_t> generateSinValues() const
     {
         // precalculated according to formula:
         // std::floor(std::pow(2, 32) * std::abs(std::sin(i + 1)); where i = 0-63 with step 1
@@ -241,10 +240,10 @@ private:
                 4149444226,   3174756917, 718787259,  3951481745};
     }
 
-    std::vector<uint32_t> generateVectorOf32BitWords()
+    std::vector<uint32_t> generateVectorOf32BitWords(const std::string & p_string) const
     {
-        auto l_bitsetVector = stringToBinaryWithPadding(m_input);
-        appendMessageLength(l_bitsetVector, m_input.size());
+        auto l_bitsetVector = stringToBinaryWithPadding(p_string);
+        appendMessageLength(l_bitsetVector, p_string.size());
 
         std::vector<uint32_t> l_output;
         const auto l_bitsetVectorSize = l_bitsetVector.size();
@@ -264,38 +263,36 @@ private:
     }
 
     std::bitset<32> concat(const std::bitset<8> & p_1, const std::bitset<8> & p_2,
-                           const std::bitset<8> & p_3, const std::bitset<8> & p_4)
+                           const std::bitset<8> & p_3, const std::bitset<8> & p_4) const
     {
         return std::bitset<32>(p_1.to_string() + p_2.to_string() + p_3.to_string() + p_4.to_string());
     }
 
-    uint32_t fun_F(uint32_t p_x, uint32_t p_y, uint32_t p_z)
+    uint32_t fun_F(uint32_t p_x, uint32_t p_y, uint32_t p_z) const
     {
         return (p_x & p_y) | ((~p_x) & p_z);
     }
 
-    uint32_t fun_G(uint32_t p_x, uint32_t p_y, uint32_t p_z)
+    uint32_t fun_G(uint32_t p_x, uint32_t p_y, uint32_t p_z) const
     {
         return (p_x & p_z) | (p_y & (~p_z));
     }
 
-    uint32_t fun_H(uint32_t p_x, uint32_t p_y, uint32_t p_z)
+    uint32_t fun_H(uint32_t p_x, uint32_t p_y, uint32_t p_z) const
     {
         return p_x ^ p_y ^ p_z;
     }
 
-    uint32_t fun_I(uint32_t p_x, uint32_t p_y, uint32_t p_z)
+    uint32_t fun_I(uint32_t p_x, uint32_t p_y, uint32_t p_z) const
     {
         return p_y ^ (p_x | (~p_z));
     }
 
-    uint32_t rotateLeft(uint32_t p_x, int p_n)
+    uint32_t rotateLeft(uint32_t p_x, int p_n) const
     {
         return ((p_x << p_n) | (p_x >> (32-p_n)));
     }
 
-    const std::string m_input;
     const std::vector<uint32_t> m_sinVector;
-    const std::vector<uint32_t> m_32BitWordVector;
     const std::vector<char> m_charLookupVector;
 };

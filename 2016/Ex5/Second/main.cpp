@@ -25,11 +25,12 @@ int main()
     const std::string c_input("reyedfim");
     std::string l_password(8, '-');
     auto l_counter = 0u;
+    const MD5 l_md5Hasher;
     for (auto i = 0u; i < 8; i++)
     {
         while(true)
         {
-            std::string l_md5Hash = MD5(c_input + std::to_string(l_counter)).getHash();
+            std::string l_md5Hash = l_md5Hasher.getHash(c_input + std::to_string(l_counter));
             l_counter++;
             if (isFirstFiveZeros(l_md5Hash))
             {
@@ -67,6 +68,8 @@ In this example, after continuing this search a total of eight times, the passwo
 Given the actual Door ID, what is the password?
 
 Your puzzle input is reyedfim.
+
+Your puzzle answer was f97c354d
 
 --- Part Two ---
 

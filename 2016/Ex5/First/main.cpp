@@ -1,5 +1,6 @@
 #include <iostream>
 #include "MD5.hpp"
+#include <chrono>
 
 bool isFirstFiveZeros(const std::string & p_md5Hash)
 {
@@ -15,11 +16,14 @@ int main()
     const std::string c_input("reyedfim");
     std::string l_password;
     auto l_counter = 0u;
+    const MD5 l_md5Hasher;
+    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+
     for (auto i = 0u; i < 8; i++)
     {
         while(true)
         {
-            std::string l_md5Hash = MD5(c_input + std::to_string(l_counter)).getHash();
+            std::string l_md5Hash = l_md5Hasher.getHash(c_input + std::to_string(l_counter));
             l_counter++;
             if (isFirstFiveZeros(l_md5Hash))
             {
@@ -28,6 +32,10 @@ int main()
             }
         }
     }
+
+    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+    std::cout << "Time difference seconds = " << std::chrono::duration_cast<std::chrono::seconds>(end - begin).count() <<std::endl;
+
     std::cout << "Password = " << l_password << std::endl;
     return 0;
 }
@@ -53,4 +61,5 @@ Given the actual Door ID, what is the password?
 
 Your puzzle input is reyedfim.
 
+Your puzzle answer was f97c354d
 */
