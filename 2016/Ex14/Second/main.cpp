@@ -63,9 +63,9 @@ int main()
                 }
                 if (hasFive(l_vectorOfHashes[l_temporaryIndex], std::string(5, l_tripleChar.get())))
                 {
+                    l_numberOfFoundKeys++;
                     std::cout << "CurrentIndex = " << l_currentIndex << std::endl;
                     std::cout << "NumberOfFoundKeys = " << l_numberOfFoundKeys << std::endl;
-                    l_numberOfFoundKeys++;
                     break;
                 }
             }
