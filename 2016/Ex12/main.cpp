@@ -48,7 +48,7 @@ void copyRegisters(const std::string & p_input, int p_value)
 
 Iterator moveIteratorToNewPosition(const std::string & p_input, Iterator p_it)
 {
-    const auto l_value = std::stoi(p_input);
+    const auto l_value = getValue(p_input);
     p_it+= l_value;
     return p_it;
 }
