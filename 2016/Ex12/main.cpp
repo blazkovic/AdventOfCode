@@ -53,56 +53,64 @@ Iterator moveIteratorToNewPosition(const std::string & p_input, Iterator p_it)
     return p_it;
 }
 
-Iterator handleJnz(std::istringstream & p_stream, Iterator p_it)
+Iterator handleJnz(const std::string & p_input, Iterator p_it)
 {
-    std::string l_item;
-    while(getline(p_stream, l_item, ' '))
+    std::string l_source;
+    std::string l_destination;
+    auto l_position = 4u;
+
+    for (; p_input[l_position] != ' '; l_position++)
     {
-        auto l_sourceValue = getValue(l_item);
-        while(getline(p_stream, l_item, ' '))
-        {
-            if (!l_sourceValue) return ++p_it;
-            return moveIteratorToNewPosition(l_item, p_it);
-        }
+        l_source.push_back(p_input[l_position]);
     }
-    return p_it;
+
+    const auto l_sourceValue = getValue(l_source);
+
+    l_position++;
+    for (; p_input[l_position] != *p_input.end(); l_position++)
+    {
+        l_destination.push_back(p_input[l_position]);
+    }
+
+    if (!l_sourceValue) return ++p_it;
+    return moveIteratorToNewPosition(l_destination, p_it);
 }
 
-void handleInc(std::istringstream & p_stream)
+void handleInc(const std::string & p_input)
 {
-    std::string l_item;
-    while(getline(p_stream, l_item, ' '))
-    {
-        if (l_item == "a") a++;
-        else if (l_item == "b") b++;
-        else if (l_item == "c") c++;
-        else if (l_item == "d") d++;
-    }
+    if (p_input[4] == 'a') a++;
+    else if (p_input[4] == 'b') b++;
+    else if (p_input[4] == 'c') c++;
+    else if (p_input[4] == 'd') d++;
 }
 
-void handleDec(std::istringstream & p_stream)
+void handleDec(const std::string & p_input)
 {
-    std::string l_item;
-    while(getline(p_stream, l_item, ' '))
-    {
-        if (l_item == "a") a--;
-        else if (l_item == "b") b--;
-        else if (l_item == "c") c--;
-        else if (l_item == "d") d--;
-    }
+    if (p_input[4] == 'a') a--;
+    else if (p_input[4] == 'b') b--;
+    else if (p_input[4] == 'c') c--;
+    else if (p_input[4] == 'd') d--;
 }
 
-void handleCopy(std::istringstream & p_stream)
+void handleCopy(const std::string & p_input)
 {
-    std::string l_item;
-    while(getline(p_stream, l_item, ' '))
+    std::string l_source;
+    std::string l_destination;
+    auto l_position = 4u;
+
+    for (; p_input[l_position] != ' '; l_position++)
     {
-        auto l_sourceValue = getValue(l_item);
-        while(getline(p_stream, l_item, ' '))
-        {
-            copyRegisters(l_item, l_sourceValue);
-        }
+        l_source.push_back(p_input[l_position]);
     }
+
+    const auto l_sourceValue = getValue(l_source);
+    l_position++;
+    for (; p_input[l_position] != *p_input.end() ; l_position++)
+    {
+        l_destination.push_back(p_input[l_position]);
+    }
+
+    copyRegisters(l_destination, l_sourceValue);
 }
 
 void parseToVector(std::vector<std::string> & p_vector, std::string & p_input)
@@ -117,30 +125,30 @@ void parseToVector(std::vector<std::string> & p_vector, std::string & p_input)
 
 void parseVector(std::vector<std::string> & p_vector)
 {
-    // c=1;   // SET FOR PART 2
+//     c=1;   // SET FOR PART 2
     for(auto it = p_vector.begin(); it != p_vector.end();)
     {
         std::istringstream l_input(*it);
         std::string l_item;
-        while(getline(l_input, l_item, ' '))
+        while(getline(l_input, l_item, '\n'))
         {
-            if(l_item == "cpy")
+            if(l_item[0] == 'c')
             {
-                handleCopy(l_input);
+                handleCopy(l_item);
                 it++;
             }
-            else if(l_item == "jnz")
+            else if(l_item[0] == 'j')
             {
-                it = handleJnz(l_input, it);
+                it = handleJnz(l_item, it);
             }
-            else if(l_item == "inc")
+            else if(l_item[0] == 'i')
             {
-                handleInc(l_input);
+                handleInc(l_item);
                 it++;
             }
-            else if(l_item == "dec")
+            else if(l_item[0] == 'd')
             {
-                handleDec(l_input);
+                handleDec(l_item);
                 it++;
             }
         }
