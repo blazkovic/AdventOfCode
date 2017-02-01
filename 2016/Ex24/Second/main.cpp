@@ -84,7 +84,7 @@ bool isDestination(const Node & p_current, const Node & p_destination)
     return (p_current.m_x == p_destination.m_x) and (p_current.m_y == p_destination.m_y);
 }
 
-int breadFirstSearch(const Node & p_source, const Node & p_destination, const std::vector<Node> & p_allNodes)
+int breadthFirstSearch(const Node & p_source, const Node & p_destination, const std::vector<Node> & p_allNodes)
 {
     std::queue<Node> l_nodesToExplore;
     std::vector<Node> l_visitedNodes;
@@ -161,7 +161,7 @@ void createAllPaths(std::vector<Path> & p_paths,
 
             if (not (l_lastTarget == it))
             {
-                l_path.m_distance = breadFirstSearch(l_lastTarget, it, p_allNodes);
+                l_path.m_distance = breadthFirstSearch(l_lastTarget, it, p_allNodes);
                 p_paths.push_back(l_path);
             }
         }

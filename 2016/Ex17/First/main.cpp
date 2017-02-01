@@ -67,7 +67,7 @@ bool isDestination(const Node & p_node)
     return (p_node.x == s_destinationX) and (p_node.y == s_destinationY);
 }
 
-std::string breadFirstSearchIterative()
+std::string breadthFirstSearchIterative()
 {
     std::queue<Node> l_nodesToExplore;
     std::string l_shortestPath;
@@ -103,7 +103,7 @@ std::string breadFirstSearchIterative()
 
 int main()
 {
-    std::cout << "Shortest path = " << breadFirstSearchIterative() << std::endl;
+    std::cout << "Shortest path = " << breadthFirstSearchIterative() << std::endl;
 
     return 0;
 }
