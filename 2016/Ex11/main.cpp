@@ -1,209 +1,257 @@
 #include <iostream>
-//#include <string>
-//#include <sstream>
-#include <vector>
-#include <bitset>
+#include <set>
+#include <tuple>
+#include <string>
+#include <queue>
+#include <algorithm>
 
-/*
-The first floor contains a thulium generator, a thulium-compatible microchip, a plutonium generator, and a strontium generator.
-The second floor contains a plutonium-compatible microchip and a strontium-compatible microchip.
-The third floor contains a promethium generator, a promethium-compatible microchip, a ruthenium generator, and a ruthenium-compatible microchip.
-The fourth floor contains nothing relevant.
+using State = std::multiset<std::pair<int, int>> ;
 
-F4  .   .   .   .   .   .   .   .   .   .   .
-F3  .   .   .   .   .   .   .   PRG PRM RG  RM
-F2  .   .   .   .   PLM .   SM  .   .   .   .
-F1  E   TG  TM  PLG .   SG  .   .   .   .   .
-*/
-
-constexpr auto g_numberOfGenerators = 2;
-constexpr auto g_numberOfMicrochips = g_numberOfGenerators;
-constexpr auto g_numberOfDevices = g_numberOfGenerators*g_numberOfGenerators;
-constexpr auto g_numberOfFloors = 4;
-constexpr auto g_numberOfElevators = 1;
-constexpr auto g_floorSpace = g_numberOfDevices + g_numberOfElevators;
-constexpr auto g_stateSize = g_floorSpace * g_numberOfFloors;
-auto g_shortestPath = 9999;
-
-using State = std::bitset<g_stateSize>;
-using StateTable = std::vector<State>;
-
-const State g_finalState("11111000000000000000");
-
-void showState(const State & l_state)
+class Node
 {
-    for (auto i = 0u; i < l_state.size(); i++)
-    {
-        if (!(i%5))
-        {
-            std::cout << std::endl;
-        }
-        std::cout << l_state[i];
-    }
-    std::cout << std::endl;
+public:
+    Node(unsigned p_elevatorFloor, State p_State, int p_pathLength = 0)
+        : m_elevatorFloor(p_elevatorFloor), m_state(p_State), m_pathLength(p_pathLength)
+    {}
+
+    unsigned m_elevatorFloor;
+    State m_state;
+    int m_pathLength;
+};
+
+//static const Node g_finalNode{3, {{3, 3}, {3, 3}}};                                             // Example
+static const Node g_finalNode{3, {{3, 3}, {3, 3}, {3, 3}, {3, 3}, {3, 3}}, 0};                  // First part
+//static const Node g_finalNode{3, {{3, 3}, {3, 3}, {3, 3}, {3, 3}, {3, 3}, {3, 3}, {3, 3}}, 0};    // Second part
+
+
+//const Node g_initialNode{0, {{1, 0}, {2, 0}}, 0};                                               // Example
+const Node g_initialNode{0, {{0, 0}, {0, 1}, {0, 1}, {2, 2}, {2, 2}}, 0};                       // First part
+//const Node g_initialNode{0, {{0, 0}, {0, 1}, {0, 1}, {2, 2}, {2, 2}, {0, 0}, {0, 0}}, 0};         // Second part
+
+bool isDestination(const Node & p_state)
+{
+    static const Node l_finalNode = g_finalNode;
+    return (l_finalNode.m_state == p_state.m_state) and (l_finalNode.m_elevatorFloor == p_state.m_elevatorFloor);
 }
 
-//bool isPossibleState(const State & p_actualState)
-//{
-//    if (p_actualState.count() != g_floorSpace) return false;
-//    auto l_isAnyChipAlone = false;
-//    auto l_isAnyGeneratorPresent = false;
-//    auto l_elevatorNeighbours = 0;
-
-//    for (auto i=0u; i < g_numberOfFloors; ++i)
-//    {
-//        if (p_actualState[i*g_floorSpace] == 1)
-//        {
-//            for (auto j=0u; j < g_floorSpace; ++j)
-//            {
-//                if (j != 0 and p_actualState[i*g_floorSpace + j] == 1)
-//                {
-//                    l_elevatorNeighbours++;
-//                }
-//            }
-//        }
-//    }
-//    return l_elevatorNeighbours;
-//}
-
-bool isPossibleState(const State & p_actualState)
+bool isValidState(const std::vector<unsigned> & p_stateVector, unsigned p_elevatorFloor)
 {
-    if (p_actualState.count() != g_floorSpace) return false;
-    auto l_isAnyChipAlone = false;
-    auto l_isAnyGeneratorPresent = false;
-    auto isElevatorPresent = false;
-    auto l_elevatorNeighbours = 0;
-
-    for (auto i=0u; i < g_numberOfFloors; ++i)
+    auto isAnyGenerator = false;
+    auto isAnyUnprotectedChip = false;
+    constexpr auto l_numberOfFloors = 4;
+    for (auto i = 0u; i < l_numberOfFloors; ++i)
     {
-        for (auto j=0u; j < g_floorSpace; ++j)
+        isAnyGenerator = false;
+        isAnyUnprotectedChip = false;
+        for (auto j = 0u; j < p_stateVector.size(); ++j)
         {
-            if (p_actualState[i*g_floorSpace] == 1) isElevatorPresent = true;
-            if (p_actualState[i*g_floorSpace] == 1 and j != 0 and p_actualState[i*g_floorSpace + j] == 1)
+            if (j%2)
             {
-                l_elevatorNeighbours++;
+                if ((p_stateVector[j] == i) and (p_stateVector[j-1] != i))
+                {
+                    isAnyUnprotectedChip = true;
+                }
             }
-            if(j%2 and j < g_floorSpace and p_actualState[i*g_floorSpace + j] == 1)
+            else
             {
-                l_isAnyGeneratorPresent = true;
-            }
-            if(!(j%2) and j+1 < g_floorSpace and j+2 < g_floorSpace and p_actualState[i*g_floorSpace + j + 2] == 1 and p_actualState[i*g_floorSpace + j + 1] == 0)
-            {
-                l_isAnyChipAlone = true;
+                if (p_stateVector[j] == i)
+                {
+                    isAnyGenerator = true;
+                }
             }
         }
-//        std::cout << "l_isAnyGeneratorPresent " << l_isAnyGeneratorPresent << std::endl;
-//        std::cout << "l_isAnyChipAlone " << l_isAnyChipAlone << std::endl;
-//        std::cout << "l_elevatorNeighbours " << l_elevatorNeighbours << std::endl;
-//        std::cout << "isElevatorPresent " << isElevatorPresent << std::endl;
-        if ((l_isAnyGeneratorPresent and l_isAnyChipAlone) or (!l_elevatorNeighbours and isElevatorPresent)) return false;
-
-        l_isAnyGeneratorPresent = false;
-        l_isAnyChipAlone = false;
-        isElevatorPresent = false;
-    }
-//    std::cout << "Zonk" << std::endl;
-    return true;
-}
-
-void loopOver(int p_elementPosition, State p_actualState, StateTable & l_states)
-{
-    if (p_elementPosition == g_floorSpace) return;
-
-    for (auto i = 0u; i < g_numberOfFloors; ++i)
-    {
-        p_actualState.set(p_elementPosition + i*g_floorSpace);
-//        showState(p_actualState);
-        if (isPossibleState(p_actualState))
-        {
-            l_states.push_back(p_actualState);
-        }
-        loopOver(p_elementPosition+1, p_actualState, l_states);
-        p_actualState.reset(p_elementPosition + i*g_floorSpace);
-    }
-}
-
-void createAllPossibleStates(StateTable & p_states)
-{
-    loopOver(0, State(), p_states);
-}
-
-bool isNeighbour(State p_initialState, State p_nextState)
-{
-    std::cout << "Initial ";
-    showState(p_initialState);
-    std::cout << std::endl;
-    std::cout << "Next ";
-    showState(p_nextState);
-    if (p_nextState == p_nextState) return false;
-    for (auto i=0u; i<g_numberOfFloors-1; i++)
-    {
-        if (p_initialState[i*g_floorSpace] == 1)
-        {
-            if (p_initialState[(i-1)*g_floorSpace]);
-            else if (p_initialState[(i-1)*g_floorSpace]);
-            else return false;
-        }
+        if (isAnyGenerator and isAnyUnprotectedChip) return false;
     }
     return true;
 }
 
-void findShortestPath(State p_initialState, StateTable p_states, int & p_numberOfSteps)
+void generateUpNeighbours(std::vector<Node> & p_nodes, const Node & p_node, unsigned p_elevatorFloor)
 {
-    p_numberOfSteps++;
-//    std::cout << "p_numberOfSteps " << p_numberOfSteps << std::endl;
-    for(auto i = 0u; i<p_states.size(); i++)
+    std::vector<unsigned> l_stateVector;
+    // handle one elements move
+    for (auto i = 0u; i < p_node.m_state.size()*2; ++i)
     {
-//            std::cout << "p_states.size() " << p_states.size() << std::endl;
-
-        if (p_numberOfSteps >= g_shortestPath)
+        for (auto it : p_node.m_state)
         {
-            break;
+            l_stateVector.push_back(it.first);
+            l_stateVector.push_back(it.second);
         }
-        if (p_states[i] == g_finalState and p_numberOfSteps < g_shortestPath)
+        if (l_stateVector[i] == p_elevatorFloor)
         {
-            g_shortestPath = p_numberOfSteps;
+            ++l_stateVector[i];
+            if (isValidState(l_stateVector, p_elevatorFloor + 1))
+            {
+                State l_newState;
+                for (auto j = 0u; j < l_stateVector.size(); j+=2)
+                {
+                    l_newState.insert(std::make_pair(l_stateVector[j], l_stateVector[j+1]));
+                }
+                Node l_newNode{p_elevatorFloor + 1, l_newState, p_node.m_pathLength + 1};
+                p_nodes.push_back(l_newNode);
+            }
         }
-
-        if (isNeighbour(p_initialState, p_states[i]))
-        {
-            auto l_currentState = p_states[i];
-            p_states.erase(p_states.begin() + i);
-            findShortestPath(l_currentState, p_states, p_numberOfSteps);
-        }
-        p_numberOfSteps--;
+        l_stateVector.clear();
     }
+    // handle two elements move
+    for (auto i = 0u; i < p_node.m_state.size()*2; ++i)
+    {
+        for (auto j = i+1; j < p_node.m_state.size()*2; ++j)
+        {
+            for (auto it : p_node.m_state)
+            {
+                l_stateVector.push_back(it.first);
+                l_stateVector.push_back(it.second);
+            }
+            if (l_stateVector[i] == p_elevatorFloor)
+            {
+                if (l_stateVector[j] == p_elevatorFloor)
+                {
+                    ++l_stateVector[i];
+                    ++l_stateVector[j];
+                    if (isValidState(l_stateVector, p_elevatorFloor + 1))
+                    {
+                        State l_newState;
+                        for (auto j = 0u; j < l_stateVector.size(); j+=2)
+                        {
+                            l_newState.insert(std::make_pair(l_stateVector[j], l_stateVector[j+1]));
+                        }
+                        Node l_newNode{p_elevatorFloor + 1, l_newState, p_node.m_pathLength + 1};
+                        p_nodes.push_back(l_newNode);
+                    }
+                }
+            }
+            l_stateVector.clear();
+        }
+    }
+}
 
+void generateDownNeighbours(std::vector<Node> & p_nodes, const Node & p_node, unsigned p_elevatorFloor)
+{
+    std::vector<unsigned> l_stateVector;
+    // handle one elements move
+    for (auto i = 0u; i < p_node.m_state.size()*2; ++i)
+    {
+        for (auto it : p_node.m_state)
+        {
+            l_stateVector.push_back(it.first);
+            l_stateVector.push_back(it.second);
+        }
+        if (l_stateVector[i] == p_elevatorFloor)
+        {
+            --l_stateVector[i];
+            if (isValidState(l_stateVector, p_elevatorFloor - 1))
+            {
+                State l_newState;
+                for (auto j = 0u; j < l_stateVector.size(); j+=2)
+                {
+                    l_newState.insert(std::make_pair(l_stateVector[j], l_stateVector[j+1]));
+                }
+                Node l_newNode{p_elevatorFloor - 1, l_newState, p_node.m_pathLength + 1};
+                p_nodes.push_back(l_newNode);
+            }
+        }
+        l_stateVector.clear();
+    }
+    // handle two elements move
+    for (auto i = 0u; i < p_node.m_state.size()*2; ++i)
+    {
+        for (auto j = i+1; j < p_node.m_state.size()*2; ++j)
+        {
+            for (auto it : p_node.m_state)
+            {
+                l_stateVector.push_back(it.first);
+                l_stateVector.push_back(it.second);
+            }
+            if (l_stateVector[i] == p_elevatorFloor)
+            {
+                if (l_stateVector[j] == p_elevatorFloor)
+                {
+                    --l_stateVector[i];
+                    --l_stateVector[j];
+                    if (isValidState(l_stateVector, p_elevatorFloor - 1))
+                    {
+                        State l_newState;
+                        for (auto j = 0u; j < l_stateVector.size(); j+=2)
+                        {
+                            l_newState.insert(std::make_pair(l_stateVector[j], l_stateVector[j+1]));
+                        }
+                        Node l_newNode{p_elevatorFloor - 1, l_newState, p_node.m_pathLength + 1};
+                        p_nodes.push_back(l_newNode);
+                    }
+                }
+            }
+            l_stateVector.clear();
+        }
+    }
+}
+
+std::vector<Node> generateNodeNeighbours(const Node & p_node)
+{
+    static const auto l_zeroFloor = 0;
+    static const auto l_firstFloor = 1;
+    static const auto l_secondFloor = 2;
+    static const auto l_thirdFloor = 3;
+    std::vector<Node> l_nodes;
+    if (p_node.m_elevatorFloor == l_zeroFloor)
+    {
+        generateUpNeighbours(l_nodes, p_node, l_zeroFloor);
+    }
+    else if (p_node.m_elevatorFloor == l_firstFloor)
+    {
+        generateUpNeighbours(l_nodes, p_node, l_firstFloor);
+        generateDownNeighbours(l_nodes, p_node, l_firstFloor);
+    }
+    else if (p_node.m_elevatorFloor == l_secondFloor)
+    {
+        generateUpNeighbours(l_nodes, p_node, l_secondFloor);
+        generateDownNeighbours(l_nodes, p_node, l_secondFloor);
+    }
+    else if (p_node.m_elevatorFloor == l_thirdFloor)
+    {
+        generateDownNeighbours(l_nodes, p_node, l_thirdFloor);
+    }
+    return l_nodes;
+}
+
+int breadthFirstSearchIterative()
+{
+    std::queue<Node> l_nodesToExplore;
+    std::vector<Node> l_visitedNodes;
+
+    const Node l_initialNode = g_initialNode;
+    l_nodesToExplore.push(l_initialNode);
+
+    while(l_nodesToExplore.size())
+    {
+        const auto l_topNode = l_nodesToExplore.front();
+        l_nodesToExplore.pop();
+
+        const std::vector<Node> l_actualNodeNeighbours = generateNodeNeighbours(l_topNode);
+
+        if (isDestination(l_topNode))
+        {
+            return l_topNode.m_pathLength;
+        }
+
+        for (const auto singleNode : l_actualNodeNeighbours)
+        {
+            auto l_visitedIt = std::find_if(l_visitedNodes.begin(), l_visitedNodes.end(), [&singleNode](const Node & p_nodeToCheck)
+            {
+                return (p_nodeToCheck.m_state == singleNode.m_state) and (p_nodeToCheck.m_elevatorFloor == singleNode.m_elevatorFloor);
+            });
+            if (l_visitedIt == l_visitedNodes.end())
+            {
+                l_nodesToExplore.push(singleNode);
+                l_visitedNodes.push_back(singleNode);
+            }
+        }
+    }
+    return 0;
 }
 
 int main()
 {
-    auto l_numberOfSteps = 0;
-
-    StateTable l_states;
-    createAllPossibleStates(l_states);
-//    State l_initialPosition(00000000000000000011110000101000011110100000); // for my problem;
-    State l_initialPosition("00000000100100010101"); // example;
-    showState(l_initialPosition);
-    std::cout << l_initialPosition << std::endl;
-    std::cout << l_initialPosition[0] << std::endl;
-    std::cout << l_initialPosition[1] << std::endl;
-    std::cout << l_initialPosition[2] << std::endl;
-    std::cout << l_initialPosition[3] << std::endl;
-    std::cout << l_initialPosition[4] << std::endl;
-    std::cout << l_initialPosition[5] << std::endl;
-    std::cout << l_initialPosition[6] << std::endl;
-    std::cout << l_initialPosition[20] << std::endl;
-
-    //findShortestPath(l_initialPosition, l_states, l_numberOfSteps);
-
-//    for(auto it : l_states)
-//    {
-//        showState(it);
-//    }
-    std::cout << "Number of states = " << l_states.size() << std::endl;
-    std::cout << "g_shortestPath = " << g_shortestPath << std::endl;
-
+    std::cout << "breadthFirstSearchIterative = " << breadthFirstSearchIterative() << std::endl;
     return 0;
 }
 
@@ -323,5 +371,22 @@ In this arrangement, it takes 11 steps to collect all of the objects at the four
 
 In your situation, what is the minimum number of steps required to bring all of the objects to the fourth floor?
 
+Your puzzle answer was 31.
 
+--- Part Two ---
+
+You step into the cleanroom separating the lobby from the isolated area and put on the hazmat suit.
+
+Upon entering the isolated containment area, however, you notice some extra parts on the first floor that weren't listed on the record outside:
+
+    An elerium generator.
+    An elerium-compatible microchip.
+    A dilithium generator.
+    A dilithium-compatible microchip.
+
+These work just like the other generators and microchips. You'll have to get them up to assembly as well.
+
+What is the minimum number of steps required to bring all of the objects, including these four new ones, to the fourth floor?
+
+Your puzzle answer was 55.
 */
