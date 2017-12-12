@@ -10,7 +10,7 @@ int calculateDistance(const int value)
 
     for(auto i = 0; i != value; ++i)
     {
-        if (x == y || ((x > 0 && x == 1 -y ) || (x < 0 && x == -y)))
+        if (x == y || ((x > 0 && x == 1 - y ) || (x < 0 && x == -y)))
         {
             temp = dx;
             dx = -dy;
