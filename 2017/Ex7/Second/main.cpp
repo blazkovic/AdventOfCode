@@ -13,6 +13,10 @@ struct Node
 {
     int weight = 0;
     int childrenWeights = 0;
+    int getTotalWeight() const
+    {
+        return weight + childrenWeights;
+    }
     std::string name = {};
     std::vector<Node> childrens = {};
 };
@@ -40,7 +44,6 @@ std::string findRootName(const std::string & input)
     {
         if (it.second == 1)
         {
-            std::cout << "Bottom program is called = " << it.first << std::endl;
             return it.first;
         }
     }
@@ -85,7 +88,6 @@ void addChildrens(Node & root, const std::string & input)
     {
         root.childrenWeights += it.weight + it.childrenWeights;
     }
-    //std::cout << " root.name = " << root.name << " root.childrenWeights = " << root.childrenWeights << std::endl;
 }
 
 void printTree(Node & root, int & recursionDeep)
@@ -96,30 +98,61 @@ void printTree(Node & root, int & recursionDeep)
     for(auto & it : root.childrens)
     {
         for (int i = 0; i < recursionDeep; ++i) std::cout << "  ";
-        //root.childrenWeights += it.weight;
         printTree(it, recursionDeep);
     }
-    //for (int i = 0; i < recursionDeep - 1; ++i) std::cout << "  ";
-    //std::cout << "Childrens weight = " << root.childrenWeights << std::endl;
     --recursionDeep;
 }
 
-//void findIndexOfUnbalancedPath(Node & root)
-//{
-//    std::sort(root.childrens.begin(), root.childrens.end(), [](const Node & left, const Node & right) {return left.weight + left.childrenWeights > right.weight + right.childrenWeights; });
-//    for (auto i = 0; i < root.childrens.size(); ++i)
-//    {
-//        std::cout << root.childrens[i].weight + root.childrens[i].childrenWeights << std::endl;
-//    }
-//    if(root.childrens[0].weight + root.childrens[0].childrenWeights == root.childrens[1].weight + root.childrens[1].childrenWeights && root.childrens[0].weight + root.childrens[0].childrenWeights != root.childrens[root.childrens.size()-1].weight + root.childrens[root.childrens.size()-1].childrenWeights)
-//    {
-//        findIndexOfUnbalancedPath(*(root.childrens.end() -1));
-//    }
-//    else if(root.childrens[0].weight + root.childrens[0].childrenWeights != root.childrens[root.childrens.size()-1].weight + root.childrens[root.childrens.size()-1].childrenWeights)
-//    {
-//        findIndexOfUnbalancedPath(*(root.childrens.begin()));
-//    }
-//}
+bool areChildrensEqual(const std::vector<Node> & childrens)
+{
+    for (auto i = 0u; i < childrens.size() - 1; ++i)
+    {
+        if(childrens[i].getTotalWeight() != childrens[i+1].getTotalWeight()) return false;
+    }
+    return true;
+}
+
+void findUnbalancedProgram(Node & root)
+{
+    std::sort(root.childrens.begin(), root.childrens.end(), [](const Node & left, const Node & right) {return left.getTotalWeight() > right.getTotalWeight(); });
+    //for (auto i = 0u; i < root.childrens.size(); ++i)
+    //{
+    //    std::cout << root.childrens[i].getTotalWeight() << std::endl;
+    //}
+    if (root.childrens.size() > 2)
+    {
+        if(root.childrens[0].getTotalWeight() == root.childrens[1].getTotalWeight())
+        {
+            if(root.childrens[0].getTotalWeight() != root.childrens[root.childrens.size()-1].getTotalWeight())
+            {
+                if (areChildrensEqual((*(root.childrens.end() -1)).childrens))
+                {
+                }
+                else
+                {
+                    findUnbalancedProgram(*(root.childrens.end() -1));
+                }
+            }
+        }
+        else if(root.childrens[0].getTotalWeight() != root.childrens[root.childrens.size()-1].getTotalWeight())
+        {
+            if (areChildrensEqual((*(root.childrens.begin())).childrens))
+            {
+                for (auto i = 0u; i < root.childrens.size() - 1; ++i)
+                {
+                    if(root.childrens[i].getTotalWeight() != root.childrens[i+1].getTotalWeight())
+                    {
+                        std::cout << root.childrens[i].weight - (root.childrens[i].getTotalWeight() - root.childrens[i+1].getTotalWeight()) << std::endl;
+                    }
+                }
+            }
+            else
+            {
+                findUnbalancedProgram(*(root.childrens.begin()));
+            }
+        }
+    }
+}
 
 int main()
 {
@@ -127,15 +160,10 @@ int main()
     root.name = findRootName(input);
     addChildrens(root, input);
 
-    int recursionDeep = 0;
-    printTree(root, recursionDeep);
+    //int recursionDeep = 0;
+    //printTree(root, recursionDeep);
 
-//    findIndexOfUnbalancedPath(root);
-
-//    for(auto & it : root.childrens[0].childrens[0].childrens[6].childrens)
-//    {
-//        std::cout << "Total weight = " << it.childrenWeights + it.weight << std::endl;
-//    }
+    findUnbalancedProgram(root);
 
     return 0;
 }
