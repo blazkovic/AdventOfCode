@@ -1,7 +1,5 @@
 #include <iostream>
 #include <string>
-#include <sstream>
-#include <map>
 
 extern std::string input;
 constexpr auto groupStart = '{';
